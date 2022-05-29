@@ -1,91 +1,71 @@
 
-
 <html>
+
 <head>
-<!-- for non-UI builds: -->
-<script src="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/shaka-player.compiled.js"></script>
-<!-- or, for UI builds: -->
-<script src="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/shaka-player.ui.js"></script>
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/controls.css">
+    <!-- for non-UI builds: -->
+    <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/shaka-player.compiled.js"></script>
+    <!-- or, for UI builds: -->
+    <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/shaka-player.ui.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/shaka-player/3.2.0/controls.css">
 </head>
+
 <body>
-<center>   <div data-shaka-player-container style="max-width:40em"
-         data-shaka-player-cast-receiver-id="1BA79154">
-       <!-- The data-shaka-player tag will make the UI library use this video element.
+    <center>
+        <div data-shaka-player-container style="max-width:40em" data-shaka-player-cast-receiver-id="1BA79154">
+            <!-- The data-shaka-player tag will make the UI library use this video element.
             If no video is provided, the UI will automatically make one inside the container div. -->
-      <video autoplay data-shaka-player id="video" style="width:100%;height:100%"></video>
-    </div></center>
-<script>
-    const manifestUri =
-        'https://d3j4fjrwclc3o8.cloudfront.net/CH5/masterCH5.mpd';
-
-    async function init() {
-        // When using the UI, the player is made automatically by the UI object.
-        const video = document.getElementById('video');
-        const ui = video['ui'];
-        const controls = ui.getControls();
-        const player = controls.getPlayer();
-
-        player.configure({
-            drm: {
-                clearKeys: {
-                    // 'key-id-in-hex': 'key-in-hex',
-                    '0d6d2a1ac8d14e19b17455650770cd99': 'ff65174f8ec5d4c88e8d8a21968563cf'
+            <video autoplay data-shaka-player id="video" style="width:100%;height:100%"></video>
+        </div>
+    </center>
+    <script>
+        const manifestUri = "https://d3j4fjrwclc3o8.cloudfront.net/CH5/masterCH5.mpd";
+        async function init() {
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+            window.player = player;
+            window.ui = ui;
+            player.configure({
+                drm: {
+                    "clearKeys": {
+                        "0d6d2a1ac8d14e19b17455650770cd99": "ff65174f8ec5d4c88e8d8a21968563cf"
+                    }
                 }
+            });
+            player.addEventListener('error', onPlayerErrorEvent);
+            controls.addEventListener('error', onUIErrorEvent);
+            try {
+                await player.load(manifestUri);
+                console.log('The video has now been loaded!');
+            } catch (error) {
+                onPlayerError(error);
             }
-        });
-
-        // Attach player and ui to the window to make it easy to access in the JS console.
-        window.player = player;
-        window.ui = ui;
-
-        // Listen for error events.
-        player.addEventListener('error', onPlayerErrorEvent);
-        controls.addEventListener('error', onUIErrorEvent);
-
-        // Try to load a manifest.
-        // This is an asynchronous process.
-        try {
-            await player.load(manifestUri);
-            // This runs if the asynchronous load is successful.
-            console.log('The video has now been loaded!');
-        } catch (error) {
-            onPlayerError(error);
+            player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+                if (type == shaka.net.NetworkingEngine.RequestType.SEGMENT) {
+                    request.headers['authorization'] = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3bXZlciI6Miwid21pZGZtdCI6ImFzY2lpIiwid21pZHR5cCI6MSwid21rZXl2ZXIiOjEsIndtaWRsZW4iOjUxMiwid21pZCI6Ik1HTTJaV0k0Tm1NdE1EQmpaaTAwTXpFeExXSmlNR1V0WkdVeFptWXlNVGcwWlRkbCIsIndtb3BpZCI6MzIsImV4cCI6MTY1NDQ0ODA5NSwiaWF0IjoxNjUzODQzMjk1fQ.CnxHsYQYe644V0HeVtDSMU6DriMiCLkbqGJm3tKoGPc ';
+                }
+            });
         }
-    }
 
-    function onPlayerErrorEvent(errorEvent) {
-        // Extract the shaka.util.Error object from the event.
-        onPlayerError(event.detail);
-    }
-
-    function onPlayerError(error) {
-        // Handle player error
-        console.error('Error code', error.code, 'object', error);
-    }
-    player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-        if (type == shaka.net.NetworkingEngine.RequestType.SEGMENT) {
-            request.headers['authorization'] = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3bXZlciI6Miwid21pZGZtdCI6ImFzY2lpIiwid21pZHR5cCI6MSwid21rZXl2ZXIiOjEsIndtaWRsZW4iOjUxMiwid21pZCI6Ik1HTTJaV0k0Tm1NdE1EQmpaaTAwTXpFeExXSmlNR1V0WkdVeFptWXlNVGcwWlRkbCIsIndtb3BpZCI6MzIsImV4cCI6MTY1NDQ0OTI2NCwiaWF0IjoxNjUzODQ0NDY0fQ.5S-Mkxy6c41T-kvEu0_-5IALEqvV8dF3Kt37B7QAZVM ';
+        function onPlayerErrorEvent(errorEvent) {
+            onPlayerError(event.detail);
         }
-    });
-    }
 
-    function onUIErrorEvent(errorEvent) {
-        // Extract the shaka.util.Error object from the event.
-        onPlayerError(event.detail);
-    }
+        function onPlayerError(error) {
+            console.error('Error code', error.code, 'object', error);
+        }
 
-    function initFailed(errorEvent) {
-        // Handle the failure to load; errorEvent.detail.reasonCode has a
-        // shaka.ui.FailReasonCode describing why.
-        console.error('Unable to load the UI library!');
-    }
+        function onUIErrorEvent(errorEvent) {
+            onPlayerError(event.detail);
+        }
 
-    // Listen to the custom shaka-ui-loaded event, to wait until the UI is loaded.
-    document.addEventListener('shaka-ui-loaded', init);
-    // Listen to the custom shaka-ui-load-failed event, in case Shaka Player fails
-    // to load (e.g. due to lack of browser support).
-    document.addEventListener('shaka-ui-load-failed', initFailed);
-</script>
+        function initFailed(errorEvent) {
+            console.error('Unable to load the UI library!');
+        }
+        document.addEventListener('shaka-ui-loaded', init);
+        document.addEventListener('shaka-ui-load-failed', initFailed);
+    </script>
 </body>
+
 </html>
